@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node ./index.ts",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "@types/ramda": "^0.27.44",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "husky": "^7.0.1",
+    "jest": "^27.0.6",
     "lint-staged": "^11.1.2",
     "prettier": "^2.3.2"
   }
