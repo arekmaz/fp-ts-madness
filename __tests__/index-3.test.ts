@@ -3,6 +3,7 @@ import { main } from "../index-3";
 describe("index-3", () => {
   test("should run without throwing", async () => {
     await expect(main()).resolves.toBeTruthy();
+    // eslint-disable-next-line no-throw-literal
   });
   test("should return the correct data", async () => {
     expect(await main()).toMatchInlineSnapshot(`
