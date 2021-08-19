@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node ./index.ts",
     "prepare": "husky install",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "lint": "eslint"
   },
   "dependencies": {
     "@types/ramda": "^0.27.44",
@@ -17,6 +18,12 @@
     "typescript": "^4.3.5"
   },
   "devDependencies": {
+    "@typescript-eslint/parser": "^4.29.2",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.24.0",
+    "eslint-plugin-typescript": "^0.14.0",
     "husky": "^7.0.1",
     "jest": "^27.0.6",
     "lint-staged": "^11.1.2",

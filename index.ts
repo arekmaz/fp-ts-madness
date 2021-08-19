@@ -13,6 +13,7 @@ import {
 } from "ramda";
 
 const log = <A>(x: A): A => {
+  // eslint-disable-next-line no-console
   console.log(x);
   return x;
 };
@@ -73,15 +74,15 @@ interface User {
   updated_at: string;
 }
 
-const getUserData = (userName: string) =>
-  pipe(userName, concat("http://api.github.com/users/"), (url) =>
-    httpGet<User>(url)
-  );
-
 const httpGet = <T>(url: string) =>
   taskEither.tryCatch<AxiosError, AxiosResponse<T>>(
     () => axios.get(url),
     (reason) => reason as AxiosError
+  );
+
+const getUserData = (userName: string) =>
+  pipe(userName, concat("http://api.github.com/users/"), (url) =>
+    httpGet<User>(url)
   );
 
 const main = async () => {
