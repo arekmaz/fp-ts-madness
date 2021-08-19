@@ -1,96 +1,122 @@
-import axios, { AxiosError } from "axios";
-import { array, string, number, taskEither, option, either } from "fp-ts";
+import axios, { AxiosError, AxiosResponse } from "axios";
+import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/function";
-import { prop, map, path } from "ramda";
+import {
+  prop,
+  map,
+  concat,
+  replace,
+  isEmpty,
+  filter,
+  complement,
+  flatten,
+} from "ramda";
 
 const log = <A>(x: A): A => {
   console.log(x);
   return x;
 };
 
-const also =
-  <T>(fn: (a: T) => void) =>
-  (a: T) => {
-    fn(a);
-    return a;
-  };
+interface Gist {
+  url: string;
+  forks_url: string;
+  commits_url: string;
+  id: string;
+  node_id: string;
+  git_pull_url: string;
+  git_push_url: string;
+  html_url: string;
+  files: {}[];
+  public: boolean;
+  created_at: string;
+  updated_at: string;
+  description: string;
+  comments: number;
+  user: unknown;
+  comments_url: string;
+  owner: {}[];
+  truncated: boolean;
+}
 
-const pathOption =
-  <R>(p: string[]) =>
-  (o: object): option.Option<R> =>
-    path(p, o) ? option.of(path(p, o) as R) : option.none;
+interface User {
+  login: string;
+  id: number;
+  node_id: string;
+  avatar_url: string;
+  gravatar_id: string;
+  url: string;
+  html_url: string;
+  followers_url: string;
+  following_url: string;
+  gists_url: string;
+  starred_url: string;
+  subscriptions_url: string;
+  organizations_url: string;
+  repos_url: string;
+  events_url: string;
+  received_events_url: string;
+  type: string;
+  site_admin: false;
+  name: string | null;
+  company: string | null;
+  blog: string;
+  location: string | null;
+  email: string | null;
+  hireable: string | null;
+  bio: string | null;
+  twitter_username: string | null;
+  public_repos: number;
+  public_gists: number;
+  followers: number;
+  following: number;
+  created_at: string;
+  updated_at: string;
+}
 
-const sliceTo = <T>(ind: number, arr: T[]) =>
-  array.takeRight(number.MagmaSub.concat(array.size(arr), ind))(arr);
-
-const main = (argv: string[]) =>
-  pipe(
-    argv,
-    (arr) => sliceTo(2, arr),
-    array.map((username) =>
-      pipe(
-        username,
-        also((un) => log(string.Semigroup.concat("username: ", un))),
-        log,
-        (username) =>
-          string.Semigroup.concat("http://api.github.com/users/", username),
-        (url) =>
-          taskEither.tryCatch(
-            () => axios.get<{ gists_url: string }>(url),
-            (e) => (e as AxiosError).toJSON()
-          )
-      )
-    ),
-    taskEither.sequenceArray
-  )().then((e) =>
-    pipe(
-      e,
-      either.fold(log, (responses) =>
-        pipe(
-          responses,
-          map((resp) =>
-            pipe(
-              resp,
-              pathOption<string>(["data", "gists_url"]),
-              either.fromOption(() => either.left("error")),
-              taskEither.fromEither,
-              taskEither.chain((templ) =>
-                pipe(templ, log, string.replace("{/gist_id}", ""), log, (url) =>
-                  taskEither.tryCatch(
-                    () => axios.get<{ description: string }[]>(url),
-                    (e) => (e as AxiosError).toJSON()
-                  )
-                )
-              )
-            )
-          ),
-          taskEither.sequenceArray
-        )().then((eith) =>
-          pipe(
-            eith,
-            either.fold(log, (responses) =>
-              pipe(
-                responses,
-                map((r) =>
-                  pipe(
-                    r,
-                    prop("data"),
-                    map((gist) =>
-                      pipe(
-                        gist,
-                        prop("description"),
-                        option.fromPredicate((s) => s.length > 0),
-                        option.map(log)
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    )
+const getUserData = (userName: string) =>
+  pipe(userName, concat("http://api.github.com/users/"), (url) =>
+    httpGet<User>(url)
   );
 
-main(process.argv);
+const httpGet = <T>(url: string) =>
+  taskEither.tryCatch<AxiosError, AxiosResponse<T>>(
+    () => axios.get(url),
+    (reason) => reason as AxiosError
+  );
+
+const main = async () => {
+  const names = ["arekmaz", "matmat"];
+
+  pipe(
+    names,
+    map((name) => getUserData(name)),
+    taskEither.sequenceArray,
+    taskEither.chain((responses) =>
+      pipe(
+        responses,
+        map((response) =>
+          pipe(
+            response,
+            prop("data"),
+            prop("gists_url"),
+            replace("{/gist_id}", ""),
+            (url) => httpGet<Gist[]>(url),
+            taskEither.map((r) =>
+              pipe(
+                r,
+                prop("data"),
+                map(prop("description")),
+                filter(complement(isEmpty))
+              )
+            )
+          )
+        ),
+        taskEither.sequenceArray
+      )
+    ),
+    taskEither.map((gists) => pipe(gists, flatten, log)),
+    taskEither.mapLeft(() => log("an error occured"))
+  )();
+};
+
+main();
