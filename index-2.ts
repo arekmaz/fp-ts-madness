@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
-import { apply, task, taskEither } from "fp-ts";
+import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/function";
 import {
   prop,
@@ -73,10 +73,6 @@ interface User {
   created_at: string;
   updated_at: string;
 }
-interface Repo {
-  full_name: string;
-  name: string;
-}
 
 const httpGet = <T>(url: string) =>
   taskEither.tryCatch<AxiosError, AxiosResponse<T>>(
@@ -97,54 +93,30 @@ const main = async () => {
     map((name) => getUserData(name)),
     taskEither.sequenceArray,
     taskEither.chain((responses) =>
-      apply.sequenceS(taskEither.ApplyPar)({
-        gists: pipe(
-          responses,
-          map((response) =>
-            pipe(
-              response,
-              prop("data"),
-              prop("gists_url"),
-              replace("{/gist_id}", ""),
-              (url) => httpGet<Gist[]>(url),
-              taskEither.map((r) =>
-                pipe(
-                  r,
-                  prop("data"),
-                  map(prop("description")),
-                  filter(complement(isEmpty))
-                )
+      pipe(
+        responses,
+        map((response) =>
+          pipe(
+            response,
+            prop("data"),
+            prop("gists_url"),
+            replace("{/gist_id}", ""),
+            (url) => httpGet<Gist[]>(url),
+            taskEither.map((r) =>
+              pipe(
+                r,
+                prop("data"),
+                map(prop("description")),
+                filter(complement(isEmpty))
               )
             )
-          ),
-          taskEither.sequenceArray,
-          taskEither.map(flatten)
+          )
         ),
-        repos: pipe(
-          responses,
-          map((response) =>
-            pipe(
-              response,
-              prop("data"),
-              prop("repos_url"),
-              (url) => httpGet<Repo[]>(url),
-              taskEither.map((r) =>
-                pipe(
-                  r,
-                  prop("data"),
-                  map(prop("full_name")),
-                  filter(complement(isEmpty))
-                )
-              )
-            )
-          ),
-          taskEither.sequenceArray,
-          taskEither.map(flatten)
-        ),
-      })
+        taskEither.sequenceArray
+      )
     ),
-    taskEither.map(log)
-    // taskEither.mapLeft((e) => log(`an error occured ${e.message}`))
+    taskEither.map((gists) => pipe(gists, flatten, log)),
+    taskEither.mapLeft((e) => log(`an error occured ${e.message}`))
   )();
 };
 
