@@ -7,7 +7,7 @@
     "start": "ts-node .",
     "prepare": "husky install",
     "test": "jest --passWithNoTests",
-    "lint": "eslint"
+    "lint": "eslint \"**/*.{ts,tsx}\""
   },
   "dependencies": {
     "@types/ramda": "^0.27.44",
@@ -18,15 +18,22 @@
     "typescript": "^4.3.5"
   },
   "devDependencies": {
+    "@types/jest": "^27.0.1",
     "@typescript-eslint/parser": "^4.29.2",
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-import": "^2.24.0",
+    "eslint-plugin-jest": "^24.4.0",
     "eslint-plugin-typescript": "^0.14.0",
     "husky": "^7.0.1",
     "jest": "^27.0.6",
     "lint-staged": "^11.1.2",
-    "prettier": "^2.3.2"
+    "msw": "^0.34.0",
+    "prettier": "^2.3.2",
+    "ts-jest": "^27.0.5"
+  },
+  "msw": {
+    "workerDirectory": "public"
   }
 }

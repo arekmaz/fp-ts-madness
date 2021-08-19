@@ -4,16 +4,19 @@ import { pipe } from "fp-ts/function";
 import { prop, map, path } from "ramda";
 
 const log = <A>(x: A): A => {
+  // eslint-disable-next-line no-console
   console.log(x);
   return x;
 };
 
 const also =
+  // prettier-ignore
+  // eslint-disable-next-line no-unused-vars
   <T>(fn: (a: T) => void) =>
-  (a: T) => {
-    fn(a);
-    return a;
-  };
+    (a: T) => {
+      fn(a);
+      return a;
+    };
 
 const pathOption =
   <R>(p: string[]) =>
@@ -32,8 +35,7 @@ const main = (argv: string[]) =>
         username,
         also((un) => log(string.Semigroup.concat("username: ", un))),
         log,
-        (username) =>
-          string.Semigroup.concat("http://api.github.com/users/", username),
+        (un) => string.Semigroup.concat("http://api.github.com/users/", un),
         (url) =>
           taskEither.tryCatch(
             () => axios.get<{ gists_url: string }>(url),
@@ -58,7 +60,7 @@ const main = (argv: string[]) =>
                 pipe(templ, log, string.replace("{/gist_id}", ""), log, (url) =>
                   taskEither.tryCatch(
                     () => axios.get<{ description: string }[]>(url),
-                    (e) => (e as AxiosError).toJSON()
+                    (err) => (err as AxiosError).toJSON()
                   )
                 )
               )
@@ -68,9 +70,9 @@ const main = (argv: string[]) =>
         )().then((eith) =>
           pipe(
             eith,
-            either.fold(log, (responses) =>
+            either.fold(log, (resps) =>
               pipe(
-                responses,
+                resps,
                 map((r) =>
                   pipe(
                     r,
